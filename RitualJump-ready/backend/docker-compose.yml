@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  leaderboard:
+    build: .
+    container_name: ritualjump-leaderboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist database outside container
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

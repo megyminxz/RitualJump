@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ritual Jump</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+        }
+        body {
+            background: #000;
+            font-family: 'Orbitron', 'Segoe UI', Arial, sans-serif;
+        }
+
+        :root {
+            --toxic-green: #39ff14;
+            --toxic-dark: #0d2b0a;
+            --toxic-glow: rgba(57, 255, 20, 0.6);
+        }
+
+        #gameContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sharp toxic button style */
+        .toxic-btn {
+            position: relative;
+            padding: clamp(14px, 4vw, 22px) clamp(40px, 12vw, 80px);
+            font-size: clamp(16px, 4vw, 24px);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--toxic-green);
+            background: #000;
+            border: 3px solid var(--toxic-green);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            clip-path: polygon(
+                0 10px, 10px 0,
+                calc(100% - 10px) 0, 100% 10px,
+                100% calc(100% - 10px), calc(100% - 10px) 100%,
+                10px 100%, 0 calc(100% - 10px)
+            );
+            box-shadow:
+                0 0 20px var(--toxic-glow),
+                inset 0 0 20px rgba(57, 255, 20, 0.1);
+        }
+        .toxic-btn:hover {
+            background: var(--toxic-green);
+            color: #000;
+            box-shadow:
+                0 0 40px var(--toxic-glow),
+                0 0 80px var(--toxic-glow);
+            text-shadow: none;
+        }
+        .toxic-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* UI Score */
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: var(--toxic-green);
+            font-size: clamp(20px, 5vw, 32px);
+            font-weight: 700;
+            text-shadow: 0 0 10px var(--toxic-glow), 0 0 20px var(--toxic-glow);
+            z-index: 10;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+        #highScore {
+            font-size: clamp(14px, 3vw, 18px);
+            color: #fff;
+            margin-top: 8px;
+            text-shadow: none;
+            opacity: 0.7;
+        }
+
+        /* Start Menu */
+        #startMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            overflow: hidden;
+        }
+        #startMenu .menu-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+        #startMenu .menu-bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+        }
+        #startMenu .menu-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #startMenu .logo {
+            width: clamp(280px, 60vw, 500px);
+            height: auto;
+            margin-bottom: 60px;
+            filter: drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.9))
+                    drop-shadow(8px 8px 0px rgba(0, 0, 0, 0.6))
+                    drop-shadow(12px 12px 25px rgba(0, 0, 0, 0.8));
+        }
+        #startMenu .best-score {
+            font-size: clamp(14px, 3vw, 20px);
+            color: #fff;
+            margin-top: 50px;
+            opacity: 0.7;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        #startMenu .best-score span {
+            color: var(--toxic-green);
+            text-shadow: 0 0 10px var(--toxic-glow);
+        }
+
+        /* Game Over */
+        #gameOver {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            padding: clamp(30px, 8vw, 70px);
+            text-align: center;
+            color: white;
+            display: none;
+            z-index: 100;
+            border: 3px solid var(--toxic-green);
+            box-shadow:
+                0 0 40px var(--toxic-glow),
+                inset 0 0 60px rgba(57, 255, 20, 0.05);
+            clip-path: polygon(
+                0 20px, 20px 0,
+                calc(100% - 20px) 0, 100% 20px,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                20px 100%, 0 calc(100% - 20px)
+            );
+        }
+        #gameOver h2 {
+            font-size: clamp(28px, 8vw, 48px);
+            margin-bottom: 10px;
+            color: #ff3333;
+            text-shadow: 0 0 20px rgba(255, 50, 50, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        #gameOver .death-text {
+            font-size: clamp(12px, 3vw, 16px);
+            color: #666;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        #gameOver p {
+            font-size: clamp(20px, 6vw, 36px);
+            margin-bottom: 40px;
+            color: var(--toxic-green);
+            text-shadow: 0 0 15px var(--toxic-glow);
+        }
+
+        #instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--toxic-green);
+            font-size: clamp(12px, 3vw, 16px);
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.5;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Secondary button style */
+        .toxic-btn-secondary {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            box-shadow: none;
+        }
+        .toxic-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Game over buttons */
+        .game-over-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        /* Logo link */
+        .logo-link {
+            display: block;
+            transition: transform 0.2s ease;
+        }
+        .logo-link:hover {
+            transform: scale(1.02);
+        }
+
+        /* Menu buttons layout */
+        #startMenu .menu-content button {
+            margin-bottom: 15px;
+        }
+
+        /* Developers Panel */
+        #devsPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 250;
+        }
+        .devs-content {
+            text-align: center;
+        }
+        .devs-content h2 {
+            font-size: clamp(24px, 6vw, 40px);
+            color: var(--toxic-green);
+            text-shadow: 0 0 20px var(--toxic-glow);
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .devs-list {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+        .dev-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            padding: 25px 35px;
+            border: 2px solid rgba(57, 255, 20, 0.3);
+            transition: all 0.2s ease;
+            clip-path: polygon(
+                0 10px, 10px 0,
+                calc(100% - 10px) 0, 100% 10px,
+                100% calc(100% - 10px), calc(100% - 10px) 100%,
+                10px 100%, 0 calc(100% - 10px)
+            );
+        }
+        .dev-card:hover {
+            border-color: var(--toxic-green);
+            background: rgba(57, 255, 20, 0.1);
+            box-shadow: 0 0 30px var(--toxic-glow);
+        }
+        .dev-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--toxic-green);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            margin-bottom: 15px;
+        }
+        .dev-name {
+            color: #fff;
+            font-size: clamp(14px, 3vw, 18px);
+            letter-spacing: 1px;
+        }
+
+        /* Tutorial Panel */
+        #tutorialPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 260;
+        }
+        .tutorial-content {
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            padding: 20px;
+        }
+        .tutorial-slides {
+            position: relative;
+            min-height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tutorial-slide {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+        .tutorial-slide.active {
+            display: flex;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .tutorial-icon {
+            font-size: clamp(50px, 15vw, 80px);
+            margin-bottom: 20px;
+        }
+        .tutorial-slide h2 {
+            font-size: clamp(22px, 6vw, 32px);
+            color: var(--toxic-green);
+            text-shadow: 0 0 20px var(--toxic-glow);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        .tutorial-slide p {
+            font-size: clamp(14px, 4vw, 18px);
+            color: #fff;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .tutorial-hint {
+            font-size: clamp(12px, 3vw, 14px);
+            color: var(--toxic-green);
+            opacity: 0.7;
+            font-style: italic;
+        }
+        .tutorial-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .tutorial-controls p {
+            margin: 0;
+            color: #666;
+        }
+        .control-key {
+            display: flex;
+            gap: 10px;
+        }
+        .key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: #111;
+            border: 2px solid var(--toxic-green);
+            color: var(--toxic-green);
+            font-size: 20px;
+            font-weight: bold;
+            clip-path: polygon(
+                0 8px, 8px 0,
+                calc(100% - 8px) 0, 100% 8px,
+                100% calc(100% - 8px), calc(100% - 8px) 100%,
+                8px 100%, 0 calc(100% - 8px)
+            );
+        }
+        .tutorial-platform-img {
+            width: 120px;
+            height: 40px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tutorial-platform-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .tutorial-platform-img.moving {
+            animation: platformMove 2s ease-in-out infinite;
+        }
+        @keyframes platformMove {
+            0%, 100% { transform: translateX(-30px); }
+            50% { transform: translateX(30px); }
+        }
+        .tutorial-platform-img.breaking {
+            animation: platformShake 0.5s ease-in-out infinite;
+        }
+        @keyframes platformShake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+        .tutorial-tips {
+            list-style: none;
+            text-align: left;
+            padding: 0;
+        }
+        .tutorial-tips li {
+            color: #fff;
+            font-size: clamp(13px, 3.5vw, 16px);
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .tutorial-tips li:before {
+            content: '▸';
+            color: var(--toxic-green);
+            position: absolute;
+            left: 0;
+        }
+        .tutorial-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0 20px;
+        }
+        .tutorial-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .tutorial-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .tutorial-dot.active {
+            background: var(--toxic-green);
+            box-shadow: 0 0 10px var(--toxic-glow);
+        }
+        .tutorial-dot:hover {
+            background: rgba(57, 255, 20, 0.5);
+        }
+        .toxic-btn-small {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        #tutorialClose {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="startMenu">
+        <div class="menu-bg">
+            <img src="sprite/Wormhole.svg" alt="">
+        </div>
+        <div class="menu-content">
+            <a href="https://x.com/ritualnet" target="_blank" class="logo-link">
+            <svg class="logo" viewBox="0 0 463 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M370.525 73H376.544V107.681H394.487V113.127H370.525V73Z" fill="#39ff14"/>
+                <path d="M347.094 73L361.081 113.127H354.948L352.54 105.904H335.458L333.05 113.127H326.916L340.903 73H347.094ZM350.706 100.458L343.999 80.2801L337.292 100.458H350.706Z" fill="#39ff14"/>
+                <path d="M312.584 102.293V73H318.603V102.293C318.603 108.254 313.33 113.7 303.814 113.7C294.298 113.7 289.082 108.254 289.082 102.293V73H295.101V102.293C295.101 105.904 298.827 108.254 303.814 108.254C308.801 108.254 312.584 105.904 312.584 102.293Z" fill="#39ff14"/>
+                <path d="M278.49 73V78.4458H266.796V113.127H260.777V78.4458H249.025V73H278.49Z" fill="#39ff14"/>
+                <path d="M238.399 73V113.127H232.38V73H238.399Z" fill="#39ff14"/>
+                <path d="M211.458 95.299L221.203 113.127H214.382L205.21 95.5856H199.019V113.127H193V73H207.904C216.847 73 220.229 77.3566 220.229 83.6623V84.8087C220.229 90.1399 217.764 94.2099 211.458 95.299ZM208.248 78.4458H199.019V90.1399H208.363C212.318 90.1399 214.21 87.9616 214.21 84.8661V83.5476C214.21 80.4521 212.261 78.4458 208.248 78.4458Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M93.7673 89.8707L98.0399 94.1712L112.869 79.2458L108.596 74.9454L93.7673 89.8707Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M67 95.3096L81.9546 110.361L91.5054 100.749L87.2325 96.4479L81.9545 101.76L75.5454 95.3095L81.9545 88.8587L97.9144 104.922L102.187 100.622L81.9544 80.2577L67 95.3096Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M108.722 85.6967L104.449 89.9972L119.278 104.923L123.551 100.622L108.722 85.6967Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M134.233 100.749L129.96 96.448L115.131 111.373L119.404 115.674L134.233 100.749Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M88.3636 73.8069L97.9144 83.4198L102.187 79.1194L96.909 73.807L103.318 67.3562L119.278 83.4199L123.551 79.1193L103.318 58.755L88.3636 73.8069Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M104.449 111.5L124.682 131.864L139.636 116.812L130.086 107.199L125.813 111.5L131.091 116.813L124.682 123.263L108.722 107.2L104.449 111.5Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M125.813 89.9972L146.045 110.362L161 95.3097L146.045 80.2578L136.495 89.8708L140.767 94.1714L146.046 88.859L152.455 95.3098L146.046 101.761L130.086 85.6968L125.813 89.9972Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M88.3636 116.812L103.318 131.864L112.869 122.251L108.596 117.951L103.318 123.263L96.909 116.812L112.869 100.748L108.596 96.4478L88.3636 116.812Z" fill="#39ff14"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M115.133 68.3662L119.406 72.6667L124.684 67.3543L131.093 73.8051L115.133 89.8688L119.405 94.1693L139.638 73.805L124.684 58.7531L115.133 68.3662Z" fill="#39ff14"/>
+                <path d="M106.334 55.8L114.084 48L121.834 55.8L114.084 63.6001L106.334 55.8Z" fill="#39ff14"/>
+                <path d="M106.335 134.2L114.084 126.4L121.834 134.2L114.084 142L106.335 134.2Z" fill="#39ff14"/>
+            </svg>
+            </a>
+            <button id="startBtn" class="toxic-btn">Start</button>
+            <button id="tutorialBtn" class="toxic-btn toxic-btn-secondary">How to Play</button>
+            <button id="devsBtn" class="toxic-btn toxic-btn-secondary">Developers</button>
+            <div class="best-score">Best: <span id="menuBest">0</span></div>
+        </div>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <div>Score: <span id="score">0</span></div>
+        <div id="highScore">Best: <span id="best">0</span></div>
+    </div>
+
+    <div id="gameOver">
+        <h2>Wasted</h2>
+        <div class="death-text">You fell into the void</div>
+        <p><span id="finalScore">0</span></p>
+        <div class="game-over-buttons">
+            <button id="restartBtn" class="toxic-btn">Again</button>
+            <button id="menuBtn" class="toxic-btn toxic-btn-secondary">Menu</button>
+        </div>
+    </div>
+
+    <!-- Developers Panel -->
+    <div id="devsPanel">
+        <div class="devs-content">
+            <h2>Developers</h2>
+            <div class="devs-list">
+                <a href="https://x.com/megymin_xz" target="_blank" class="dev-card">
+                    <div class="dev-avatar" style="background-image: url('avatars/meg.jpg'); background-size: cover; background-position: center;"></div>
+                    <div class="dev-name">Megymin</div>
+                </a>
+                <a href="https://x.com/emeli_mag" target="_blank" class="dev-card">
+                    <div class="dev-avatar" style="background-image: url('avatars/mag.jpg'); background-size: cover; background-position: center;"></div>
+                    <div class="dev-name">Emeli_mag</div>
+                </a>
+            </div>
+            <button id="devsCloseBtn" class="toxic-btn toxic-btn-secondary">Back</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Panel -->
+    <div id="tutorialPanel">
+        <div class="tutorial-content">
+            <div class="tutorial-slides">
+                <!-- Slide 1: Welcome -->
+                <div class="tutorial-slide active" data-slide="0">
+                    <div class="tutorial-icon">🎮</div>
+                    <h2>Welcome to Ritual</h2>
+                    <p>Jump as high as you can without falling into the void!</p>
+                    <div class="tutorial-hint">Your score increases as you climb higher</div>
+                </div>
+
+                <!-- Slide 2: Controls -->
+                <div class="tutorial-slide" data-slide="1">
+                    <div class="tutorial-icon">⌨️</div>
+                    <h2>Controls</h2>
+                    <div class="tutorial-controls">
+                        <div class="control-key">
+                            <span class="key">←</span>
+                            <span class="key">→</span>
+                        </div>
+                        <p>or</p>
+                        <div class="control-key">
+                            <span class="key">A</span>
+                            <span class="key">D</span>
+                        </div>
+                    </div>
+                    <p>Move left and right to land on platforms</p>
+                </div>
+
+                <!-- Slide 3: Normal Platform -->
+                <div class="tutorial-slide" data-slide="2">
+                    <h2>Normal Platform</h2>
+                    <div class="tutorial-platform-img">
+                        <img src="sprite/platform1.jpg" alt="Normal Platform">
+                    </div>
+                    <p>Standard platform - always safe to land on</p>
+                    <div class="tutorial-hint">These are your best friends!</div>
+                </div>
+
+                <!-- Slide 4: Moving Platform -->
+                <div class="tutorial-slide" data-slide="3">
+                    <h2>Moving Platform</h2>
+                    <div class="tutorial-platform-img moving">
+                        <img src="sprite/platform1.jpg" alt="Moving Platform">
+                    </div>
+                    <p>Moves left and right - time your jump!</p>
+                    <div class="tutorial-hint">Watch the pattern before jumping</div>
+                </div>
+
+                <!-- Slide 5: Breaking Platform -->
+                <div class="tutorial-slide" data-slide="4">
+                    <h2>Breaking Platform</h2>
+                    <div class="tutorial-platform-img breaking">
+                        <img src="sprite/platform.jpg" alt="Breaking Platform">
+                    </div>
+                    <p>Breaks after you land - act fast!</p>
+                    <div class="tutorial-hint">⚠️ Don't stay too long!</div>
+                </div>
+
+                <!-- Slide 6: Spring Platform -->
+                <div class="tutorial-slide" data-slide="5">
+                    <div class="tutorial-icon">🚀</div>
+                    <h2>Spring Platform</h2>
+                    <p>Launches you extra high!</p>
+                    <div class="tutorial-hint">Great for reaching distant platforms</div>
+                </div>
+
+                <!-- Slide 7: Tips -->
+                <div class="tutorial-slide" data-slide="6">
+                    <div class="tutorial-icon">💡</div>
+                    <h2>Pro Tips</h2>
+                    <ul class="tutorial-tips">
+                        <li>You can wrap around screen edges</li>
+                        <li>Avoid breaking platforms when possible</li>
+                        <li>Use springs for big jumps</li>
+                        <li>Keep moving - don't fall behind!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tutorial-nav">
+                <button id="tutorialPrev" class="toxic-btn toxic-btn-small">← Prev</button>
+                <div class="tutorial-dots"></div>
+                <button id="tutorialNext" class="toxic-btn toxic-btn-small">Next →</button>
+            </div>
+            <button id="tutorialClose" class="toxic-btn">Got it!</button>
+        </div>
+    </div>
+
+    <div id="instructions">
+        ← → / A D
+    </div>
+
+    <script src="leaderboard.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
