@@ -1,79 +1,58 @@
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Дозволені домени для CORS
-const ALLOWED_ORIGINS = [
-    'https://megyminxz.github.io',
-    'http://localhost:5500',      // Live Server для розробки
-    'http://127.0.0.1:5500'
-];
-
-// CORS налаштування
-app.use(cors({
-    origin: function(origin, callback) {
-        // Дозволяємо запити без origin (Postman, curl)
-        if (!origin) return callback(null, true);
-
-        if (ALLOWED_ORIGINS.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS not allowed'));
-        }
-    },
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-}));
-
-app.use(express.json());
-
-// Ініціалізація SQLite бази даних
-const dbPath = path.join(__dirname, 'data', 'leaderboard.db');
-const fs = require('fs');
+// Шлях до файлу з даними
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'scores.json');
 
 // Створюємо папку data якщо не існує
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-    fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const db = new Database(dbPath);
+// Ініціалізуємо файл якщо не існує
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify([]));
+}
 
-// Створюємо таблицю якщо не існує
-db.exec(`
-    CREATE TABLE IF NOT EXISTS scores (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        score INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`);
+// Функції для роботи з даними
+function loadScores() {
+    try {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        return [];
+    }
+}
 
-// Створюємо індекс для швидкого сортування
-db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_score ON scores(score DESC)
-`);
+function saveScores(scores) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(scores, null, 2));
+}
 
-console.log('Database initialized at:', dbPath);
+// CORS - дозволяємо всі домени (для простоти)
+app.use(cors());
+app.use(express.json());
+
+console.log('Data file:', DATA_FILE);
 
 // ==================== API ENDPOINTS ====================
 
 // GET /leaderboard - отримати ТОП-10
 app.get('/leaderboard', (req, res) => {
     try {
-        const stmt = db.prepare(`
-            SELECT score, created_at
-            FROM scores
-            ORDER BY score DESC
-            LIMIT 10
-        `);
-        const leaderboard = stmt.all();
+        const scores = loadScores();
+        const top10 = scores
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
 
         res.json({
             success: true,
-            data: leaderboard
+            data: top10
         });
     } catch (error) {
         console.error('Error fetching leaderboard:', error);
@@ -101,32 +80,33 @@ app.post('/score', (req, res) => {
         if (score <= 0 || score > 1e9) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid score value (must be > 0 and < 1 billion)'
+                error: 'Invalid score value'
             });
         }
 
-        // Округлюємо до цілого числа
         const validScore = Math.floor(score);
+        const scores = loadScores();
 
-        // Зберігаємо в базу
-        const stmt = db.prepare('INSERT INTO scores (score) VALUES (?)');
-        const result = stmt.run(validScore);
+        // Додаємо новий score
+        const newEntry = {
+            score: validScore,
+            created_at: new Date().toISOString()
+        };
+        scores.push(newEntry);
 
-        // Перевіряємо позицію в рейтингу
-        const positionStmt = db.prepare(`
-            SELECT COUNT(*) as position
-            FROM scores
-            WHERE score > ?
-        `);
-        const { position } = positionStmt.get(validScore);
+        // Зберігаємо (тримаємо тільки топ 1000 для економії місця)
+        const sorted = scores.sort((a, b) => b.score - a.score).slice(0, 1000);
+        saveScores(sorted);
+
+        // Позиція в рейтингу
+        const position = sorted.findIndex(s => s.score === validScore && s.created_at === newEntry.created_at) + 1;
 
         res.json({
             success: true,
             data: {
-                id: result.lastInsertRowid,
                 score: validScore,
-                position: position + 1,
-                isTop10: position < 10
+                position: position,
+                isTop10: position <= 10
             }
         });
     } catch (error) {
@@ -138,40 +118,33 @@ app.post('/score', (req, res) => {
     }
 });
 
-// GET /stats - статистика (опціонально)
+// GET /stats
 app.get('/stats', (req, res) => {
     try {
-        const totalStmt = db.prepare('SELECT COUNT(*) as total FROM scores');
-        const avgStmt = db.prepare('SELECT AVG(score) as average FROM scores');
-        const maxStmt = db.prepare('SELECT MAX(score) as best FROM scores');
-
-        const { total } = totalStmt.get();
-        const { average } = avgStmt.get();
-        const { best } = maxStmt.get();
+        const scores = loadScores();
+        const total = scores.length;
+        const avg = total > 0 ? Math.round(scores.reduce((a, b) => a + b.score, 0) / total) : 0;
+        const best = total > 0 ? Math.max(...scores.map(s => s.score)) : 0;
 
         res.json({
             success: true,
             data: {
                 totalGames: total,
-                averageScore: Math.round(average || 0),
-                bestScore: best || 0
+                averageScore: avg,
+                bestScore: best
             }
         });
     } catch (error) {
-        console.error('Error fetching stats:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch stats'
-        });
+        res.status(500).json({ success: false, error: 'Failed to fetch stats' });
     }
 });
 
-// Health check для Coolify
+// Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Root endpoint
+// Root
 app.get('/', (req, res) => {
     res.json({
         name: 'RitualJump Leaderboard API',
@@ -179,26 +152,13 @@ app.get('/', (req, res) => {
         endpoints: {
             'GET /leaderboard': 'Get TOP-10 scores',
             'POST /score': 'Submit a new score',
-            'GET /stats': 'Get game statistics',
+            'GET /stats': 'Get statistics',
             'GET /health': 'Health check'
         }
     });
 });
 
-// Запуск сервера
+// Запуск
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
-╔════════════════════════════════════════════════╗
-║   RitualJump Leaderboard API                   ║
-║   Running on port ${PORT}                          ║
-║   http://localhost:${PORT}                         ║
-╚════════════════════════════════════════════════╝
-    `);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('Shutting down...');
-    db.close();
-    process.exit(0);
+    console.log(`Server running on port ${PORT}`);
 });
