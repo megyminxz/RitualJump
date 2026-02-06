@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ritual Jump</title>
+
+    <!-- html2canvas for card screenshot -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ritual Jump - Beat My Score!">
+    <meta name="twitter:description" content="Jump as high as you can in this addictive platformer game!">
+    <meta name="twitter:image" content="https://megymin-xz.github.io/ritual-jump/share-card.png">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Ritual Jump - Beat My Score!">
+    <meta property="og:description" content="Jump as high as you can in this addictive platformer game!">
+    <meta property="og:image" content="https://megymin-xz.github.io/ritual-jump/share-card.png">
+    <meta property="og:url" content="https://megymin-xz.github.io/ritual-jump/">
+    <meta property="og:type" content="website">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
 
@@ -496,6 +512,783 @@
         #tutorialClose {
             margin-top: 10px;
         }
+
+        /* Rank System */
+        #rankPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 260;
+        }
+        .rank-content {
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            padding: 25px 30px;
+            border: 3px solid var(--toxic-green);
+            background: #000;
+            clip-path: polygon(
+                0 20px, 20px 0,
+                calc(100% - 20px) 0, 100% 20px,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                20px 100%, 0 calc(100% - 20px)
+            );
+            box-shadow:
+                0 0 40px var(--toxic-glow),
+                inset 0 0 60px rgba(57, 255, 20, 0.05);
+        }
+        .rank-content h2 {
+            font-size: clamp(16px, 4vw, 20px);
+            color: var(--toxic-green);
+            text-shadow: 0 0 20px var(--toxic-glow);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.7;
+        }
+        .current-rank {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(57, 255, 20, 0.03);
+            border: 1px solid rgba(57, 255, 20, 0.15);
+            border-radius: 8px;
+        }
+        .rank-icon {
+            width: clamp(50px, 12vw, 70px);
+            height: clamp(50px, 12vw, 70px);
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 15px var(--toxic-glow));
+        }
+        .rank-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.3s ease;
+        }
+        .rank-icon.ritualist-glow img {
+            filter: drop-shadow(0 0 10px var(--toxic-glow)) drop-shadow(0 0 20px var(--toxic-glow));
+            animation: rankIconPulse 2s ease-in-out infinite;
+        }
+        @keyframes rankIconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .rank-info {
+            flex: 1;
+            text-align: left;
+        }
+        .rank-title {
+            font-size: clamp(20px, 5vw, 28px);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        .rank-title.ritty-bitty {
+            color: #888;
+            text-shadow: 0 0 10px rgba(136, 136, 136, 0.5);
+        }
+        .rank-title.ritty {
+            color: #00bfff;
+            text-shadow: 0 0 15px rgba(0, 191, 255, 0.6);
+        }
+        .rank-title.ritualist {
+            color: var(--toxic-green);
+            text-shadow: 0 0 15px var(--toxic-glow), 0 0 30px var(--toxic-glow);
+            animation: ritualistGlow 2s ease-in-out infinite;
+        }
+        @keyframes ritualistGlow {
+            0%, 100% { text-shadow: 0 0 15px var(--toxic-glow), 0 0 30px var(--toxic-glow); }
+            50% { text-shadow: 0 0 20px var(--toxic-glow), 0 0 40px var(--toxic-glow); }
+        }
+        .rank-score {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #888;
+        }
+        .rank-score span {
+            color: var(--toxic-green);
+            font-weight: 700;
+        }
+        .rank-progress-section {
+            margin-bottom: 20px;
+        }
+        .rank-progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: clamp(11px, 2.5vw, 14px);
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rank-progress-label .next-rank {
+            color: var(--toxic-green);
+        }
+        .rank-progress-bar {
+            width: 100%;
+            height: 16px;
+            background: #111;
+            border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+            border-radius: 3px;
+        }
+        .rank-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #333, var(--toxic-green));
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--toxic-glow);
+        }
+        .rank-progress-fill.ritty-bitty {
+            background: linear-gradient(90deg, #444, #888);
+            box-shadow: 0 0 10px rgba(136, 136, 136, 0.3);
+        }
+        .rank-progress-fill.ritty {
+            background: linear-gradient(90deg, #006080, #00bfff);
+            box-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+        }
+        .rank-progress-fill.ritualist {
+            background: linear-gradient(90deg, #1a6600, var(--toxic-green));
+            box-shadow: 0 0 15px var(--toxic-glow);
+        }
+        .rank-progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 3px #000;
+            z-index: 1;
+        }
+        .rank-tiers {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .rank-tier {
+            text-align: center;
+            opacity: 0.4;
+            transition: opacity 0.3s ease;
+        }
+        .rank-tier.active {
+            opacity: 1;
+        }
+        .rank-tier.unlocked {
+            opacity: 0.7;
+        }
+        .rank-tier-icon {
+            width: clamp(32px, 8vw, 48px);
+            height: clamp(32px, 8vw, 48px);
+            margin-bottom: 5px;
+        }
+        .rank-tier-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+        .rank-tier.unlocked .rank-tier-icon img {
+            opacity: 0.7;
+        }
+        .rank-tier.active .rank-tier-icon img {
+            opacity: 1;
+            filter: drop-shadow(0 0 10px var(--toxic-glow));
+        }
+        .rank-tier-name {
+            font-size: clamp(10px, 2.5vw, 13px);
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rank-tier-score {
+            font-size: clamp(9px, 2vw, 11px);
+            color: #666;
+            margin-top: 3px;
+        }
+        .rank-tier.active .rank-tier-name {
+            color: var(--toxic-green);
+            text-shadow: 0 0 10px var(--toxic-glow);
+        }
+
+        /* Rank display in menu */
+        .menu-rank {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            clip-path: polygon(
+                0 8px, 8px 0,
+                calc(100% - 8px) 0, 100% 8px,
+                100% calc(100% - 8px), calc(100% - 8px) 100%,
+                8px 100%, 0 calc(100% - 8px)
+            );
+        }
+        .menu-rank:hover {
+            border-color: var(--toxic-green);
+            background: rgba(57, 255, 20, 0.1);
+            transform: scale(1.02);
+        }
+        .menu-rank:hover .menu-rank-icon img {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px var(--toxic-glow));
+        }
+        .menu-rank-icon img {
+            transition: all 0.2s ease;
+        }
+        .menu-rank-icon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+        }
+        .menu-rank-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .menu-rank-info {
+            text-align: left;
+        }
+        .menu-rank-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .menu-rank-title.ritty-bitty { color: #888; }
+        .menu-rank-title.ritty { color: #00bfff; }
+        .menu-rank-title.ritualist { color: var(--toxic-green); text-shadow: 0 0 10px var(--toxic-glow); }
+        .menu-rank-progress {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        /* Share Button */
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #fff;
+            background: #000;
+            border: 2px solid #1DA1F2;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .share-btn:hover {
+            background: #1DA1F2;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(29, 161, 242, 0.5);
+        }
+        .share-btn:active {
+            transform: scale(0.95);
+        }
+        .share-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        .share-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        .share-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        /* Share Modal */
+        #shareModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .share-modal-content {
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            background: #0a0a0a;
+            border: 2px solid var(--toxic-green);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(57, 255, 20, 0.2);
+        }
+        .share-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .share-modal-header h3 {
+            font-size: 16px;
+            color: var(--toxic-green);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .share-modal-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .share-modal-close:hover {
+            color: #fff;
+        }
+
+        /* NFT Card Styles */
+        .nft-card-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .nft-card {
+            width: 320px;
+            background: linear-gradient(145deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+            border: 3px solid var(--toxic-green);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 0 30px rgba(57, 255, 20, 0.3),
+                inset 0 0 60px rgba(57, 255, 20, 0.05);
+        }
+        .nft-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(57, 255, 20, 0.1), transparent 30%);
+            animation: cardShine 4s linear infinite;
+            animation-play-state: var(--animation-state, running);
+            pointer-events: none;
+        }
+        @keyframes cardShine {
+            100% { transform: rotate(360deg); }
+        }
+        .nft-card-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .nft-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+        }
+        .nft-logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--toxic-green);
+            text-shadow: 0 0 10px var(--toxic-glow);
+            letter-spacing: 2px;
+        }
+        .nft-badge {
+            font-size: 9px;
+            color: var(--toxic-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 8px;
+            border: 1px solid var(--toxic-green);
+            border-radius: 4px;
+        }
+        .nft-rank-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .nft-rank-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 10px;
+        }
+        .nft-rank-icon img,
+        .nft-rank-icon svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 15px var(--toxic-glow));
+        }
+        .nft-rank-name {
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .nft-rank-name.ritty-bitty { color: #888; }
+        .nft-rank-name.ritty { color: #00bfff; }
+        .nft-rank-name.ritualist { color: var(--toxic-green); text-shadow: 0 0 20px var(--toxic-glow); }
+        .nft-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .nft-stat {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .nft-stat-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--toxic-green);
+            text-shadow: 0 0 10px var(--toxic-glow);
+        }
+        .nft-stat-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+        .nft-player {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nft-player-icon {
+            width: 24px;
+            height: 24px;
+            fill: var(--toxic-green);
+        }
+        .nft-player-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            flex: 1;
+        }
+        .nft-player-name.empty {
+            color: #555;
+            font-style: italic;
+            font-weight: 400;
+        }
+        .nft-footer {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(57, 255, 20, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nft-date {
+            font-size: 10px;
+            color: #555;
+        }
+        .nft-id {
+            font-size: 10px;
+            color: var(--toxic-green);
+            font-family: monospace;
+        }
+
+        .share-input-group {
+            margin-bottom: 15px;
+        }
+        .share-input-label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .share-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        .share-input:focus {
+            outline: none;
+            border-color: var(--toxic-green);
+        }
+        .share-input::placeholder {
+            color: #555;
+        }
+        .share-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .share-buttons-row {
+            display: flex;
+            gap: 10px;
+        }
+        .share-btn-action {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 15px;
+            font-size: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--toxic-green);
+            background: transparent;
+            border: 2px solid var(--toxic-green);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-radius: 6px;
+        }
+        .share-btn-action:hover {
+            background: rgba(57, 255, 20, 0.1);
+        }
+        .share-btn-action.copied {
+            background: var(--toxic-green);
+            color: #000;
+        }
+        .share-btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .share-btn-go {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 20px;
+            font-size: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #fff;
+            background: #1DA1F2;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+        .share-btn-go:hover {
+            background: #1a91da;
+            box-shadow: 0 0 20px rgba(29, 161, 242, 0.4);
+        }
+        .share-btn-go svg, .share-btn-action svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .share-btn-action svg.spin {
+            animation: spinIcon 1s linear infinite;
+        }
+        @keyframes spinIcon {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Rank Criteria Styles */
+        .rank-criteria {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: left;
+        }
+        .rank-criteria h3 {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .rank-criteria-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+        }
+        .rank-criteria-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(5px);
+        }
+        .rank-criteria-item:hover .criteria-icon img {
+            transform: scale(1.1);
+        }
+        .rank-criteria-item.unlocked {
+            border-color: rgba(57, 255, 20, 0.3);
+            background: rgba(57, 255, 20, 0.05);
+        }
+        .rank-criteria-item.active {
+            border-color: var(--toxic-green);
+            background: rgba(57, 255, 20, 0.1);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
+        }
+        .criteria-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .criteria-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .criteria-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: grayscale(50%) opacity(0.6);
+            transition: all 0.3s ease;
+        }
+        .rank-criteria-item.unlocked .criteria-icon img {
+            filter: grayscale(0%) opacity(0.8);
+        }
+        .rank-criteria-item.active .criteria-icon img {
+            filter: grayscale(0%) opacity(1) drop-shadow(0 0 8px var(--toxic-glow));
+        }
+        .criteria-name {
+            font-size: clamp(13px, 3vw, 15px);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+        .criteria-name.ritty-bitty { color: #888; }
+        .criteria-name.ritty { color: #00bfff; }
+        .criteria-name.ritualist { color: var(--toxic-green); text-shadow: 0 0 10px var(--toxic-glow); }
+        .criteria-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .criteria-status:not(.locked) {
+            background: rgba(57, 255, 20, 0.2);
+            color: var(--toxic-green);
+            border: 1px solid var(--toxic-green);
+        }
+        .criteria-status.locked {
+            background: rgba(255, 255, 255, 0.1);
+            color: #666;
+            border: 1px solid #444;
+        }
+        .criteria-details {
+            padding-left: 38px;
+        }
+        .criteria-requirement {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .criteria-label {
+            color: #555;
+            font-size: 10px;
+        }
+        .criteria-value {
+            color: var(--toxic-green);
+            font-weight: 700;
+            font-size: 10px;
+        }
+        .criteria-desc {
+            color: #888;
+            font-size: clamp(10px, 2.5vw, 12px);
+            line-height: 1.4;
+            margin-bottom: 6px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .criteria-tips {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .criteria-tips li {
+            color: #666;
+            font-size: clamp(9px, 2.2vw, 11px);
+            padding: 2px 0;
+            padding-left: 14px;
+            position: relative;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .criteria-tips li:before {
+            content: '▸';
+            color: var(--toxic-green);
+            position: absolute;
+            left: 0;
+            font-size: 10px;
+        }
+
+        /* Make rank content scrollable on small screens */
+        .rank-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .rank-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .rank-content::-webkit-scrollbar-track {
+            background: #111;
+        }
+        .rank-content::-webkit-scrollbar-thumb {
+            background: var(--toxic-green);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -534,6 +1327,15 @@
             <button id="tutorialBtn" class="toxic-btn toxic-btn-secondary">How to Play</button>
             <button id="devsBtn" class="toxic-btn toxic-btn-secondary">Developers</button>
             <div class="best-score">Best: <span id="menuBest">0</span></div>
+            <div class="menu-rank" id="menuRankBtn">
+                <div class="menu-rank-icon" id="menuRankIcon">
+                    <img src="role/ritibiti.svg" alt="Rank" id="menuRankIconImg">
+                </div>
+                <div class="menu-rank-info">
+                    <div class="menu-rank-title ritty-bitty" id="menuRankTitle">Ritty Bitty</div>
+                    <div class="menu-rank-progress" id="menuRankProgress">0 / 400 to next rank</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -550,6 +1352,12 @@
             <button id="restartBtn" class="toxic-btn">Again</button>
             <button id="menuBtn" class="toxic-btn toxic-btn-secondary">Menu</button>
         </div>
+        <button id="shareGameOver" class="share-btn" style="margin-top: 20px;">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Share Score
+        </button>
     </div>
 
     <!-- Developers Panel -->
@@ -662,6 +1470,183 @@
 
     <div id="instructions">
         ← → / A D
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal">
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h3>Share to X</h3>
+                <button class="share-modal-close" id="shareModalClose">&times;</button>
+            </div>
+
+            <!-- NFT Card -->
+            <div class="nft-card-wrapper">
+                <div class="nft-card" id="nftCard">
+                    <div class="nft-card-inner">
+                        <div class="nft-header">
+                            <div class="nft-logo">RITUAL</div>
+                            <div class="nft-badge">Score Card</div>
+                        </div>
+
+                        <div class="nft-rank-section">
+                            <div class="nft-rank-icon" id="nftRankIcon"></div>
+                            <div class="nft-rank-name ritty-bitty" id="nftRankName">Ritty Bitty</div>
+                        </div>
+
+                        <div class="nft-stats">
+                            <div class="nft-stat">
+                                <div class="nft-stat-value" id="nftScore">0</div>
+                                <div class="nft-stat-label">Best Score</div>
+                            </div>
+                            <div class="nft-stat">
+                                <div class="nft-stat-value" id="nftGames">-</div>
+                                <div class="nft-stat-label">Rank Level</div>
+                            </div>
+                        </div>
+
+                        <div class="nft-player">
+                            <svg class="nft-player-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span class="nft-player-name empty" id="nftPlayerName">Enter your @username</span>
+                        </div>
+
+                        <div class="nft-footer">
+                            <span class="nft-date" id="nftDate"></span>
+                            <span class="nft-id" id="nftId">#0001</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="share-input-group">
+                <label class="share-input-label">Your X username</label>
+                <input type="text" class="share-input" id="shareNickname" placeholder="@username">
+            </div>
+
+            <div class="share-buttons">
+                <div class="share-buttons-row">
+                    <button class="share-btn-action" id="shareCopyCard">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                        Copy Card
+                    </button>
+                    <button class="share-btn-action" id="shareCopyText">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                        Copy Text
+                    </button>
+                </div>
+                <a href="#" class="share-btn-go" id="shareGoBtn" target="_blank">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    Go to X
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rank Panel -->
+    <div id="rankPanel">
+        <div class="rank-content">
+            <div class="current-rank">
+                <div class="rank-icon" id="rankIcon">
+                    <img src="role/ritibiti.svg" alt="Rank" id="rankIconImg">
+                </div>
+                <div class="rank-info">
+                    <div class="rank-title ritty-bitty" id="rankTitle">Ritty Bitty</div>
+                    <div class="rank-score">Best: <span id="rankScore">0</span> pts</div>
+                </div>
+            </div>
+            <div class="rank-progress-section">
+                <div class="rank-progress-label">
+                    <span id="currentRankLabel">Ritty Bitty</span>
+                    <span class="next-rank" id="nextRankLabel">Ritty (400)</span>
+                </div>
+                <div class="rank-progress-bar">
+                    <div class="rank-progress-fill ritty-bitty" id="rankProgressFill" style="width: 0%"></div>
+                    <span class="rank-progress-text" id="rankProgressText">0%</span>
+                </div>
+            </div>
+
+            <!-- Rank Criteria Section -->
+            <div class="rank-criteria">
+                <h3>How to get ranks</h3>
+
+                <div class="rank-criteria-item unlocked" id="criteriaBitty">
+                    <div class="criteria-header">
+                        <div class="criteria-icon"><img src="role/ritibiti.svg" alt="Ritty Bitty"></div>
+                        <span class="criteria-name ritty-bitty">Ritty Bitty</span>
+                        <span class="criteria-status" id="statusBitty">✓ Unlocked</span>
+                    </div>
+                    <div class="criteria-details">
+                        <div class="criteria-requirement">
+                            <span class="criteria-label">Required Score:</span>
+                            <span class="criteria-value">0+</span>
+                        </div>
+                        <p class="criteria-desc">Every ritual master starts somewhere. Take your first steps into the void!</p>
+                    </div>
+                </div>
+
+                <div class="rank-criteria-item" id="criteriaRitty">
+                    <div class="criteria-header">
+                        <div class="criteria-icon"><img src="role/riti.svg" alt="Ritty"></div>
+                        <span class="criteria-name ritty">Ritty</span>
+                        <span class="criteria-status locked" id="statusRitty">🔒 400 pts</span>
+                    </div>
+                    <div class="criteria-details">
+                        <div class="criteria-requirement">
+                            <span class="criteria-label">Required Score:</span>
+                            <span class="criteria-value">400+</span>
+                        </div>
+                        <p class="criteria-desc">You're getting the hang of it! Master the platforms and climb higher.</p>
+                        <ul class="criteria-tips">
+                            <li>Use moving platforms wisely</li>
+                            <li>Avoid breaking platforms when possible</li>
+                            <li>Spring platforms are your friends</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="rank-criteria-item" id="criteriaRitualist">
+                    <div class="criteria-header">
+                        <div class="criteria-icon"><img src="role/ritualist.svg" alt="Ritualist"></div>
+                        <span class="criteria-name ritualist">Ritualist</span>
+                        <span class="criteria-status locked" id="statusRitualist">🔒 1500 pts</span>
+                    </div>
+                    <div class="criteria-details">
+                        <div class="criteria-requirement">
+                            <span class="criteria-label">Required Score:</span>
+                            <span class="criteria-value">1500+</span>
+                        </div>
+                        <p class="criteria-desc">The ultimate title! Only true masters of the ritual reach these heights.</p>
+                        <ul class="criteria-tips">
+                            <li>Perfect timing on every jump</li>
+                            <li>Never miss a platform</li>
+                            <li>Use screen wrapping strategically</li>
+                            <li>Stay calm under pressure</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share Section -->
+            <div class="share-section">
+                <div class="share-label">Share your achievement</div>
+                <button id="shareToX" class="share-btn">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    Share
+                </button>
+            </div>
+
+            <button id="rankCloseBtn" class="toxic-btn" style="margin-top: 15px;">Back</button>
+        </div>
     </div>
 
     <script src="game.js"></script>
