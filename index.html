@@ -8,6 +8,9 @@
     <!-- html2canvas for card screenshot -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Ritual Jump - Beat My Score!">
@@ -58,40 +61,52 @@
             height: 100%;
         }
 
-        /* Sharp toxic button style */
+        /* ========== UNIFIED TOXIC BUTTON SYSTEM ========== */
         .toxic-btn {
             position: relative;
-            padding: clamp(14px, 4vw, 22px) clamp(40px, 12vw, 80px);
-            font-size: clamp(16px, 4vw, 24px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 180px;
+            padding: 16px 32px;
+            font-size: 14px;
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--toxic-green);
-            background: #000;
-            border: 3px solid var(--toxic-green);
+            color: #000;
+            background: var(--toxic-green);
+            border: 2px solid var(--toxic-green);
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.15s ease;
-            clip-path: polygon(
-                0 10px, 10px 0,
-                calc(100% - 10px) 0, 100% 10px,
-                100% calc(100% - 10px), calc(100% - 10px) 100%,
-                10px 100%, 0 calc(100% - 10px)
-            );
-            box-shadow:
-                0 0 20px var(--toxic-glow),
-                inset 0 0 20px rgba(57, 255, 20, 0.1);
+            transition: all 0.2s ease;
+            box-shadow: 0 0 20px var(--toxic-glow);
+            text-decoration: none;
         }
         .toxic-btn:hover {
-            background: var(--toxic-green);
-            color: #000;
-            box-shadow:
-                0 0 40px var(--toxic-glow),
-                0 0 80px var(--toxic-glow);
-            text-shadow: none;
+            background: #4dff2a;
+            border-color: #4dff2a;
+            box-shadow: 0 0 30px var(--toxic-glow), 0 0 60px var(--toxic-glow);
+            transform: translateY(-2px);
         }
         .toxic-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.97);
+        }
+        .toxic-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Outline variant - same size, just outline */
+        .toxic-btn-outline {
+            background: transparent;
+            color: var(--toxic-green);
+        }
+        .toxic-btn-outline:hover {
+            background: var(--toxic-green);
+            color: #000;
         }
 
         /* UI Score */
@@ -179,43 +194,49 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #000;
-            padding: clamp(30px, 8vw, 70px);
+            background: rgba(0, 0, 0, 0.95);
+            padding: clamp(40px, 8vw, 60px);
             text-align: center;
             color: white;
             display: none;
             z-index: 100;
-            border: 3px solid var(--toxic-green);
-            box-shadow:
-                0 0 40px var(--toxic-glow),
-                inset 0 0 60px rgba(57, 255, 20, 0.05);
-            clip-path: polygon(
-                0 20px, 20px 0,
-                calc(100% - 20px) 0, 100% 20px,
-                100% calc(100% - 20px), calc(100% - 20px) 100%,
-                20px 100%, 0 calc(100% - 20px)
-            );
+            border: 2px solid var(--toxic-green);
+            border-radius: 24px;
+            box-shadow: 0 0 40px var(--toxic-glow);
+            min-width: 320px;
         }
         #gameOver h2 {
-            font-size: clamp(28px, 8vw, 48px);
+            font-size: clamp(28px, 8vw, 42px);
             margin-bottom: 10px;
-            color: #ff3333;
-            text-shadow: 0 0 20px rgba(255, 50, 50, 0.8);
+            color: var(--toxic-green);
+            text-shadow: 0 0 20px var(--toxic-glow);
             text-transform: uppercase;
             letter-spacing: 3px;
         }
         #gameOver .death-text {
-            font-size: clamp(12px, 3vw, 16px);
+            font-size: clamp(12px, 3vw, 14px);
             color: #666;
             margin-bottom: 30px;
             text-transform: uppercase;
             letter-spacing: 4px;
         }
         #gameOver p {
-            font-size: clamp(20px, 6vw, 36px);
-            margin-bottom: 40px;
+            font-size: clamp(24px, 6vw, 40px);
+            margin-bottom: 10px;
             color: var(--toxic-green);
             text-shadow: 0 0 15px var(--toxic-glow);
+        }
+        .xp-earned {
+            font-size: clamp(14px, 4vw, 18px);
+            color: var(--toxic-green);
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px var(--toxic-glow);
+            animation: xpPulse 1s ease-out;
+        }
+        @keyframes xpPulse {
+            0% { transform: scale(1.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         #instructions {
@@ -231,19 +252,29 @@
             letter-spacing: 2px;
             text-transform: uppercase;
         }
+        .mobile-hint {
+            display: none;
+        }
+        @media (max-width: 768px), (pointer: coarse) {
+            .desktop-hint {
+                display: none;
+            }
+            .mobile-hint {
+                display: inline;
+            }
+        }
 
-        /* Secondary button style */
+        /* Secondary button - outline toxic style */
         .toxic-btn-secondary {
             background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            box-shadow: none;
+            border: 2px solid var(--toxic-green);
+            color: var(--toxic-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
         }
         .toxic-btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #fff;
-            color: #fff;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            background: var(--toxic-green);
+            color: #000;
+            box-shadow: 0 0 30px var(--toxic-glow);
         }
 
         /* Game over buttons */
@@ -303,20 +334,17 @@
             flex-direction: column;
             align-items: center;
             text-decoration: none;
-            padding: 25px 35px;
+            padding: 25px 40px;
             border: 2px solid rgba(57, 255, 20, 0.3);
+            border-radius: 16px;
             transition: all 0.2s ease;
-            clip-path: polygon(
-                0 10px, 10px 0,
-                calc(100% - 10px) 0, 100% 10px,
-                100% calc(100% - 10px), calc(100% - 10px) 100%,
-                10px 100%, 0 calc(100% - 10px)
-            );
+            background: rgba(0, 0, 0, 0.5);
         }
         .dev-card:hover {
             border-color: var(--toxic-green);
             background: rgba(57, 255, 20, 0.1);
             box-shadow: 0 0 30px var(--toxic-glow);
+            transform: translateY(-4px);
         }
         .dev-avatar {
             width: 70px;
@@ -425,12 +453,8 @@
             color: var(--toxic-green);
             font-size: 20px;
             font-weight: bold;
-            clip-path: polygon(
-                0 8px, 8px 0,
-                calc(100% - 8px) 0, 100% 8px,
-                100% calc(100% - 8px), calc(100% - 8px) 100%,
-                8px 100%, 0 calc(100% - 8px)
-            );
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
         }
         .tutorial-platform-img {
             width: 120px;
@@ -506,8 +530,9 @@
             background: rgba(57, 255, 20, 0.5);
         }
         .toxic-btn-small {
-            padding: 10px 20px;
-            font-size: 14px;
+            min-width: 100px;
+            padding: 12px 20px;
+            font-size: 12px;
         }
         #tutorialClose {
             margin-top: 10px;
@@ -530,18 +555,11 @@
             text-align: center;
             max-width: 420px;
             width: 90%;
-            padding: 25px 30px;
-            border: 3px solid var(--toxic-green);
-            background: #000;
-            clip-path: polygon(
-                0 20px, 20px 0,
-                calc(100% - 20px) 0, 100% 20px,
-                100% calc(100% - 20px), calc(100% - 20px) 100%,
-                20px 100%, 0 calc(100% - 20px)
-            );
-            box-shadow:
-                0 0 40px var(--toxic-glow),
-                inset 0 0 60px rgba(57, 255, 20, 0.05);
+            padding: 30px;
+            border: 2px solid var(--toxic-green);
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 0 40px var(--toxic-glow);
         }
         .rank-content h2 {
             font-size: clamp(16px, 4vw, 20px);
@@ -605,6 +623,15 @@
             color: var(--toxic-green);
             text-shadow: 0 0 15px var(--toxic-glow), 0 0 30px var(--toxic-glow);
             animation: ritualistGlow 2s ease-in-out infinite;
+        }
+        .rank-title.ritual-master {
+            color: #FFD700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.4);
+            animation: ritualMasterGlow 2s ease-in-out infinite;
+        }
+        @keyframes ritualMasterGlow {
+            0%, 100% { text-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.4); }
+            50% { text-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.6); }
         }
         @keyframes ritualistGlow {
             0%, 100% { text-shadow: 0 0 15px var(--toxic-glow), 0 0 30px var(--toxic-glow); }
@@ -728,24 +755,20 @@
         .menu-rank {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             margin-top: 20px;
-            padding: 15px 25px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 16px 28px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(57, 255, 20, 0.3);
+            border-radius: 14px;
             cursor: pointer;
             transition: all 0.2s ease;
-            clip-path: polygon(
-                0 8px, 8px 0,
-                calc(100% - 8px) 0, 100% 8px,
-                100% calc(100% - 8px), calc(100% - 8px) 100%,
-                8px 100%, 0 calc(100% - 8px)
-            );
         }
         .menu-rank:hover {
             border-color: var(--toxic-green);
             background: rgba(57, 255, 20, 0.1);
-            transform: scale(1.02);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--toxic-glow);
         }
         .menu-rank:hover .menu-rank-icon img {
             transform: scale(1.1);
@@ -776,35 +799,39 @@
         .menu-rank-title.ritty-bitty { color: #888; }
         .menu-rank-title.ritty { color: #00bfff; }
         .menu-rank-title.ritualist { color: var(--toxic-green); text-shadow: 0 0 10px var(--toxic-glow); }
+        .menu-rank-title.ritual-master { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
         .menu-rank-progress {
             font-size: 11px;
             color: #666;
             margin-top: 3px;
         }
 
-        /* Share Button */
+        /* Share Button - toxic green style */
         .share-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
+            justify-content: center;
+            gap: 10px;
+            min-width: 180px;
+            padding: 16px 32px;
             font-size: 14px;
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #fff;
-            background: #000;
-            border: 2px solid #1DA1F2;
+            letter-spacing: 2px;
+            color: var(--toxic-green);
+            background: transparent;
+            border: 2px solid var(--toxic-green);
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
             text-decoration: none;
-            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
         }
         .share-btn:hover {
-            background: #1DA1F2;
-            color: #fff;
-            box-shadow: 0 0 20px rgba(29, 161, 242, 0.5);
+            background: var(--toxic-green);
+            color: #000;
+            box-shadow: 0 0 30px var(--toxic-glow);
         }
         .share-btn:active {
             transform: scale(0.95);
@@ -839,7 +866,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 300;
+            z-index: 1100;
             padding: 20px;
             overflow-y: auto;
         }
@@ -964,6 +991,7 @@
         .nft-rank-name.ritty-bitty { color: #888; }
         .nft-rank-name.ritty { color: #00bfff; }
         .nft-rank-name.ritualist { color: var(--toxic-green); text-shadow: 0 0 20px var(--toxic-glow); }
+        .nft-rank-name.ritual-master { color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
         .nft-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1078,7 +1106,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 12px 15px;
+            padding: 14px 20px;
             font-size: 12px;
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
@@ -1088,11 +1116,13 @@
             background: transparent;
             border: 2px solid var(--toxic-green);
             cursor: pointer;
-            transition: all 0.15s ease;
-            border-radius: 6px;
+            transition: all 0.2s ease;
+            border-radius: 12px;
         }
         .share-btn-action:hover {
-            background: rgba(57, 255, 20, 0.1);
+            background: var(--toxic-green);
+            color: #000;
+            box-shadow: 0 0 20px var(--toxic-glow);
         }
         .share-btn-action.copied {
             background: var(--toxic-green);
@@ -1107,24 +1137,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 14px 20px;
+            gap: 10px;
+            padding: 16px 32px;
             font-size: 14px;
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #fff;
-            background: #1DA1F2;
-            border: none;
+            letter-spacing: 2px;
+            color: #000;
+            background: var(--toxic-green);
+            border: 2px solid var(--toxic-green);
             cursor: pointer;
-            transition: all 0.15s ease;
-            border-radius: 6px;
+            transition: all 0.2s ease;
+            border-radius: 12px;
             text-decoration: none;
+            box-shadow: 0 0 20px var(--toxic-glow);
         }
         .share-btn-go:hover {
-            background: #1a91da;
-            box-shadow: 0 0 20px rgba(29, 161, 242, 0.4);
+            background: #4dff2a;
+            box-shadow: 0 0 30px var(--toxic-glow), 0 0 60px var(--toxic-glow);
+            transform: translateY(-2px);
         }
         .share-btn-go svg, .share-btn-action svg {
             width: 16px;
@@ -1211,6 +1243,7 @@
         .criteria-name.ritty-bitty { color: #888; }
         .criteria-name.ritty { color: #00bfff; }
         .criteria-name.ritualist { color: var(--toxic-green); text-shadow: 0 0 10px var(--toxic-glow); }
+        .criteria-name.ritual-master { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
         .criteria-status {
             font-size: 11px;
             padding: 4px 10px;
@@ -1289,6 +1322,489 @@
             background: var(--toxic-green);
             border-radius: 3px;
         }
+
+        /* Wallet Connect Button - toxic green style */
+        .wallet-connect-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 180px;
+            padding: 16px 32px;
+            margin-top: 20px;
+            font-size: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            background: var(--toxic-green);
+            border: 2px solid var(--toxic-green);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 20px var(--toxic-glow);
+        }
+        .wallet-connect-btn:hover {
+            background: #4dff2a;
+            border-color: #4dff2a;
+            box-shadow: 0 0 30px var(--toxic-glow), 0 0 60px var(--toxic-glow);
+            transform: translateY(-2px);
+        }
+        .wallet-connect-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* User Info */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8B5CF6, #6366F1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .user-avatar svg {
+            width: 24px;
+            height: 24px;
+            color: #fff;
+        }
+        .user-details {
+            flex: 1;
+        }
+        .user-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .user-xp {
+            font-size: 12px;
+            color: var(--toxic-green);
+            margin-top: 2px;
+        }
+        .logout-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .logout-btn:hover {
+            opacity: 1;
+        }
+        .logout-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #ff6b6b;
+        }
+
+        /* Auth Modal */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 400;
+        }
+        .auth-modal-content {
+            max-width: 380px;
+            width: 90%;
+            padding: 30px;
+            background: #0a0a0a;
+            border: 3px solid #8B5CF6;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.3);
+        }
+        .auth-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .auth-modal-header h3 {
+            font-size: 20px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .auth-modal-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .auth-modal-close:hover {
+            color: #fff;
+        }
+        .auth-wallet-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .auth-wallet-info svg {
+            width: 24px;
+            height: 24px;
+            color: #8B5CF6;
+        }
+        .auth-wallet-info span {
+            color: #8B5CF6;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .auth-description {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 20px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .auth-input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .auth-input-label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-family: 'Orbitron', sans-serif;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        .auth-input:focus {
+            outline: none;
+            border-color: #8B5CF6;
+        }
+        .auth-input::placeholder {
+            color: #444;
+        }
+        .auth-error {
+            color: #ff4444;
+            font-size: 13px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 68, 68, 0.1);
+            border-radius: 6px;
+        }
+        .auth-register-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #8B5CF6, #6366F1);
+            border-color: #8B5CF6;
+            color: #fff;
+        }
+        .auth-register-btn:hover {
+            background: linear-gradient(135deg, #A78BFA, #818CF8);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+        }
+
+        /* Auth Required Message */
+        .auth-required {
+            text-align: center;
+            padding: 20px 40px;
+            margin-bottom: 15px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 2px dashed rgba(139, 92, 246, 0.4);
+            border-radius: 12px;
+        }
+        .auth-required-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .auth-required p {
+            color: #8B5CF6;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        /* Inline SVG icons */
+        .inline-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        .inline-icon.warning {
+            color: #ff9800;
+        }
+        .status-icon {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        .tutorial-icon svg {
+            width: 60px;
+            height: 60px;
+            color: var(--toxic-green);
+        }
+        .auth-required-icon svg {
+            width: 50px;
+            height: 50px;
+            color: #8B5CF6;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 600px) {
+            #startMenu .logo {
+                width: clamp(200px, 80vw, 350px);
+                margin-bottom: 30px;
+            }
+
+            .toxic-btn {
+                min-width: 150px;
+                padding: 14px 24px;
+                font-size: 12px;
+            }
+
+            .wallet-connect-btn {
+                min-width: 150px;
+                padding: 14px 24px;
+                font-size: 12px;
+            }
+
+            .user-info {
+                padding: 10px 15px;
+                gap: 10px;
+            }
+
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+
+            .user-name {
+                font-size: 12px;
+            }
+
+            .user-xp {
+                font-size: 11px;
+            }
+
+            .menu-rank {
+                padding: 10px 15px;
+                gap: 8px;
+            }
+
+            .menu-rank-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .menu-rank-title {
+                font-size: 12px;
+            }
+
+            .menu-rank-progress {
+                font-size: 10px;
+            }
+
+            .auth-required {
+                padding: 15px 25px;
+            }
+
+            .auth-required-icon svg {
+                width: 35px;
+                height: 35px;
+            }
+
+            .auth-required p {
+                font-size: 11px;
+            }
+
+            #gameOver {
+                padding: clamp(20px, 5vw, 40px);
+                width: 90%;
+                max-width: 350px;
+            }
+
+            .game-over-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .share-btn {
+                font-size: 12px;
+                padding: 8px 16px;
+            }
+
+            /* Auth modal mobile */
+            .auth-modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .auth-modal-header h3 {
+                font-size: 16px;
+            }
+
+            .auth-input {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            /* Rank panel mobile */
+            .rank-content {
+                padding: 15px 20px;
+                width: 95%;
+            }
+
+            .rank-icon {
+                width: clamp(40px, 10vw, 60px);
+                height: clamp(40px, 10vw, 60px);
+            }
+
+            .rank-title {
+                font-size: clamp(16px, 4vw, 24px);
+            }
+
+            .rank-criteria-item {
+                padding: 10px;
+            }
+
+            .criteria-icon {
+                width: 24px;
+                height: 24px;
+            }
+
+            .criteria-name {
+                font-size: clamp(11px, 2.5vw, 14px);
+            }
+
+            /* Share modal mobile */
+            .share-modal-content {
+                padding: 15px;
+                width: 95%;
+            }
+
+            .nft-card {
+                width: 280px;
+                padding: 15px;
+            }
+
+            .nft-rank-icon {
+                width: 50px;
+                height: 50px;
+            }
+
+            .nft-rank-name {
+                font-size: 18px;
+            }
+
+            .nft-stat-value {
+                font-size: 18px;
+            }
+
+            /* Touch control hint */
+            #instructions {
+                display: none;
+            }
+
+            .touch-hint {
+                position: fixed;
+                bottom: 15px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: var(--toxic-green);
+                font-size: 11px;
+                opacity: 0.5;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                pointer-events: none;
+                z-index: 10;
+            }
+
+            /* Tutorial mobile */
+            .tutorial-content {
+                padding: 15px;
+            }
+
+            .tutorial-icon svg {
+                width: 45px;
+                height: 45px;
+            }
+
+            .tutorial-slide h2 {
+                font-size: clamp(18px, 5vw, 26px);
+            }
+
+            .key {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .tutorial-nav {
+                gap: 10px;
+            }
+
+            .toxic-btn-small {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 380px) {
+            .nft-card {
+                width: 250px;
+                padding: 12px;
+            }
+
+            .nft-stats {
+                gap: 8px;
+            }
+
+            .nft-stat {
+                padding: 8px;
+            }
+
+            .wallet-connect-btn {
+                font-size: 11px;
+                padding: 8px 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1323,17 +1839,53 @@
                 <path d="M106.335 134.2L114.084 126.4L121.834 134.2L114.084 142L106.335 134.2Z" fill="#39ff14"/>
             </svg>
             </a>
-            <button id="startBtn" class="toxic-btn">Start</button>
+            <!-- Require wallet connection to play -->
+            <div id="authRequired" class="auth-required">
+                <div class="auth-required-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <p>Connect your wallet to play</p>
+            </div>
+
+            <button id="startBtn" class="toxic-btn" style="display: none;">Start</button>
             <button id="tutorialBtn" class="toxic-btn toxic-btn-secondary">How to Play</button>
             <button id="devsBtn" class="toxic-btn toxic-btn-secondary">Developers</button>
-            <div class="best-score">Best: <span id="menuBest">0</span></div>
-            <div class="menu-rank" id="menuRankBtn">
+            <div class="best-score" id="bestScoreSection" style="display: none;">Best: <span id="menuBest">0</span></div>
+            <!-- Connect Wallet Button -->
+            <button id="connectWalletBtn" class="wallet-connect-btn">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 18V19C21 20.1 20.1 21 19 21H5C3.89 21 3 20.1 3 19V5C3 3.9 3.89 3 5 3H19C20.1 3 21 3.9 21 5V6H12C10.89 6 10 6.9 10 8V16C10 17.1 10.89 18 12 18H21ZM12 16H22V8H12V16ZM16 13.5C15.17 13.5 14.5 12.83 14.5 12C14.5 11.17 15.17 10.5 16 10.5C16.83 10.5 17.5 11.17 17.5 12C17.5 12.83 16.83 13.5 16 13.5Z" fill="currentColor"/>
+                </svg>
+                Connect Wallet
+            </button>
+
+            <!-- User Info (shown when logged in) -->
+            <div id="userInfo" class="user-info" style="display: none;">
+                <div class="user-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Player</div>
+                    <div class="user-xp" id="userXP">0 XP</div>
+                </div>
+                <button id="logoutBtn" class="logout-btn" title="Logout">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="menu-rank" id="menuRankBtn" style="display: none;">
                 <div class="menu-rank-icon" id="menuRankIcon">
                     <img src="role/ritibiti.svg" alt="Rank" id="menuRankIconImg">
                 </div>
                 <div class="menu-rank-info">
                     <div class="menu-rank-title ritty-bitty" id="menuRankTitle">Ritty Bitty</div>
-                    <div class="menu-rank-progress" id="menuRankProgress">0 / 400 to next rank</div>
+                    <div class="menu-rank-progress" id="menuRankProgress">0 / 1,000 XP to Ritty</div>
                 </div>
             </div>
         </div>
@@ -1348,6 +1900,7 @@
         <h2>Wasted</h2>
         <div class="death-text">You fell into the void</div>
         <p><span id="finalScore">0</span></p>
+        <div class="xp-earned" id="xpEarned">+0 XP</div>
         <div class="game-over-buttons">
             <button id="restartBtn" class="toxic-btn">Again</button>
             <button id="menuBtn" class="toxic-btn toxic-btn-secondary">Menu</button>
@@ -1358,6 +1911,7 @@
             </svg>
             Share Score
         </button>
+        <button id="leaderboardGameOver" class="toxic-btn toxic-btn-secondary" style="margin-top: 10px;">Leaderboard</button>
     </div>
 
     <!-- Developers Panel -->
@@ -1384,7 +1938,9 @@
             <div class="tutorial-slides">
                 <!-- Slide 1: Welcome -->
                 <div class="tutorial-slide active" data-slide="0">
-                    <div class="tutorial-icon">🎮</div>
+                    <div class="tutorial-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 6H3C1.9 6 1 6.9 1 8V16C1 17.1 1.9 18 3 18H21C22.1 18 23 17.1 23 16V8C23 6.9 22.1 6 21 6ZM21 16H3V8H21V16ZM6 15H8V13H10V11H8V9H6V11H4V13H6V15ZM14.5 12C14.5 11.17 15.17 10.5 16 10.5C16.83 10.5 17.5 11.17 17.5 12C17.5 12.83 16.83 13.5 16 13.5C15.17 13.5 14.5 12.83 14.5 12ZM17.5 9C17.5 8.17 18.17 7.5 19 7.5C19.83 7.5 20.5 8.17 20.5 9C20.5 9.83 19.83 10.5 19 10.5C18.17 10.5 17.5 9.83 17.5 9Z" fill="currentColor"/></svg>
+                    </div>
                     <h2>Welcome to Ritual</h2>
                     <p>Jump as high as you can without falling into the void!</p>
                     <div class="tutorial-hint">Your score increases as you climb higher</div>
@@ -1392,7 +1948,9 @@
 
                 <!-- Slide 2: Controls -->
                 <div class="tutorial-slide" data-slide="1">
-                    <div class="tutorial-icon">⌨️</div>
+                    <div class="tutorial-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 5H4C2.9 5 2 5.9 2 7V17C2 18.1 2.9 19 4 19H20C21.1 19 22 18.1 22 17V7C22 5.9 21.1 5 20 5ZM11 8H13V11H16V13H13V16H11V13H8V11H11V8ZM5 11H7V13H5V11ZM8 15H6V14H8V15ZM8 10H6V9H8V10ZM4 13V11H5V13H4ZM17 15H15V14H17V15ZM17 10H15V9H17V10ZM18 13H17V11H18V13ZM20 13H19V11H20V13Z" fill="currentColor"/></svg>
+                    </div>
                     <h2>Controls</h2>
                     <div class="tutorial-controls">
                         <div class="control-key">
@@ -1435,12 +1993,14 @@
                         <img src="sprite/platform.jpg" alt="Breaking Platform">
                     </div>
                     <p>Breaks after you land - act fast!</p>
-                    <div class="tutorial-hint">⚠️ Don't stay too long!</div>
+                    <div class="tutorial-hint"><svg class="inline-icon warning" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 21H23L12 2L1 21ZM13 18H11V16H13V18ZM13 14H11V10H13V14Z" fill="currentColor"/></svg> Don't stay too long!</div>
                 </div>
 
                 <!-- Slide 6: Spring Platform -->
                 <div class="tutorial-slide" data-slide="5">
-                    <div class="tutorial-icon">🚀</div>
+                    <div class="tutorial-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2ZM12 15.47L7.11 17.66L12 5.84L16.89 17.66L12 15.47Z" fill="currentColor"/></svg>
+                    </div>
                     <h2>Spring Platform</h2>
                     <p>Launches you extra high!</p>
                     <div class="tutorial-hint">Great for reaching distant platforms</div>
@@ -1448,7 +2008,9 @@
 
                 <!-- Slide 7: Tips -->
                 <div class="tutorial-slide" data-slide="6">
-                    <div class="tutorial-icon">💡</div>
+                    <div class="tutorial-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 21C9 21.55 9.45 22 10 22H14C14.55 22 15 21.55 15 21V20H9V21ZM12 2C8.14 2 5 5.14 5 9C5 11.38 6.19 13.47 8 14.74V17C8 17.55 8.45 18 9 18H15C15.55 18 16 17.55 16 17V14.74C17.81 13.47 19 11.38 19 9C19 5.14 15.86 2 12 2ZM14.85 13.1L14 13.7V16H10V13.7L9.15 13.1C7.8 12.16 7 10.63 7 9C7 6.24 9.24 4 12 4C14.76 4 17 6.24 17 9C17 10.63 16.2 12.16 14.85 13.1Z" fill="currentColor"/></svg>
+                    </div>
                     <h2>Pro Tips</h2>
                     <ul class="tutorial-tips">
                         <li>You can wrap around screen edges</li>
@@ -1469,7 +2031,8 @@
     </div>
 
     <div id="instructions">
-        ← → / A D
+        <span class="desktop-hint">Use arrow keys or A/D</span>
+        <span class="mobile-hint">Tap left or right side of screen</span>
     </div>
 
     <!-- Share Modal -->
@@ -1581,7 +2144,7 @@
                     <div class="criteria-header">
                         <div class="criteria-icon"><img src="role/ritibiti.svg" alt="Ritty Bitty"></div>
                         <span class="criteria-name ritty-bitty">Ritty Bitty</span>
-                        <span class="criteria-status" id="statusBitty">✓ Unlocked</span>
+                        <span class="criteria-status" id="statusBitty"><svg class="status-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg> Unlocked</span>
                     </div>
                     <div class="criteria-details">
                         <div class="criteria-requirement">
@@ -1596,12 +2159,12 @@
                     <div class="criteria-header">
                         <div class="criteria-icon"><img src="role/riti.svg" alt="Ritty"></div>
                         <span class="criteria-name ritty">Ritty</span>
-                        <span class="criteria-status locked" id="statusRitty">🔒 400 pts</span>
+                        <span class="criteria-status locked" id="statusRitty"><svg class="status-icon" viewBox="0 0 24 24"><path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z" fill="currentColor"/></svg> 1,000 XP</span>
                     </div>
                     <div class="criteria-details">
                         <div class="criteria-requirement">
-                            <span class="criteria-label">Required Score:</span>
-                            <span class="criteria-value">400+</span>
+                            <span class="criteria-label">Required XP:</span>
+                            <span class="criteria-value">1,000+</span>
                         </div>
                         <p class="criteria-desc">You're getting the hang of it! Master the platforms and climb higher.</p>
                         <ul class="criteria-tips">
@@ -1616,19 +2179,38 @@
                     <div class="criteria-header">
                         <div class="criteria-icon"><img src="role/ritualist.svg" alt="Ritualist"></div>
                         <span class="criteria-name ritualist">Ritualist</span>
-                        <span class="criteria-status locked" id="statusRitualist">🔒 1500 pts</span>
+                        <span class="criteria-status locked" id="statusRitualist"><svg class="status-icon" viewBox="0 0 24 24"><path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z" fill="currentColor"/></svg> 5,000 XP</span>
                     </div>
                     <div class="criteria-details">
                         <div class="criteria-requirement">
-                            <span class="criteria-label">Required Score:</span>
-                            <span class="criteria-value">1500+</span>
+                            <span class="criteria-label">Required XP:</span>
+                            <span class="criteria-value">5,000+</span>
                         </div>
-                        <p class="criteria-desc">The ultimate title! Only true masters of the ritual reach these heights.</p>
+                        <p class="criteria-desc">A true master of the ritual! Keep climbing to reach legendary status.</p>
                         <ul class="criteria-tips">
                             <li>Perfect timing on every jump</li>
-                            <li>Never miss a platform</li>
                             <li>Use screen wrapping strategically</li>
                             <li>Stay calm under pressure</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="rank-criteria-item" id="criteriaRitualMaster">
+                    <div class="criteria-header">
+                        <div class="criteria-icon"><img src="role/ritualist.svg" alt="Ritual Master"></div>
+                        <span class="criteria-name ritual-master">Ritual Master</span>
+                        <span class="criteria-status locked" id="statusRitualMaster"><svg class="status-icon" viewBox="0 0 24 24"><path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z" fill="currentColor"/></svg> 40,000 XP</span>
+                    </div>
+                    <div class="criteria-details">
+                        <div class="criteria-requirement">
+                            <span class="criteria-label">Required XP:</span>
+                            <span class="criteria-value">40,000+</span>
+                        </div>
+                        <p class="criteria-desc">The ultimate legend! Only the most dedicated players achieve this rank.</p>
+                        <ul class="criteria-tips">
+                            <li>Countless hours of dedication</li>
+                            <li>True mastery of all mechanics</li>
+                            <li>A legend among ritual masters</li>
                         </ul>
                     </div>
                 </div>
@@ -1649,6 +2231,72 @@
         </div>
     </div>
 
+    <!-- Auth Modal -->
+    <div id="authModal" class="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-modal-header">
+                <h3>Welcome to Ritual!</h3>
+                <button class="auth-modal-close" onclick="WalletAuth.closeAuthModal()">&times;</button>
+            </div>
+            <div class="auth-wallet-info">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 18V19C21 20.1 20.1 21 19 21H5C3.89 21 3 20.1 3 19V5C3 3.9 3.89 3 5 3H19C20.1 3 21 3.9 21 5V6H12C10.89 6 10 6.9 10 8V16C10 17.1 10.89 18 12 18H21ZM12 16H22V8H12V16ZM16 13.5C15.17 13.5 14.5 12.83 14.5 12C14.5 11.17 15.17 10.5 16 10.5C16.83 10.5 17.5 11.17 17.5 12C17.5 12.83 16.83 13.5 16 13.5Z" fill="currentColor"/>
+                </svg>
+                <span id="authWalletAddress">0x0000...0000</span>
+            </div>
+            <p class="auth-description">Create your player profile to save your progress!</p>
+            <div class="auth-input-group">
+                <label class="auth-input-label">Choose your nickname</label>
+                <input type="text" class="auth-input" id="authNickname" placeholder="Enter nickname" maxlength="20">
+            </div>
+            <div class="auth-error" id="authError" style="display: none;"></div>
+            <button class="toxic-btn auth-register-btn" id="authRegisterBtn">Register</button>
+        </div>
+    </div>
+
+    <!-- Wallet Notification Styles -->
+    <style>
+        .wallet-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--toxic-green);
+            border-radius: 8px;
+            color: var(--toxic-green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        .wallet-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .wallet-notification.error {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+    </style>
+
+    <script src="supabase-config.js"></script>
+    <script src="wallet-auth.js"></script>
     <script src="game.js"></script>
+    <script src="frontend/leaderboard.js"></script>
+
+    <script>
+        // Connect wallet button
+        document.getElementById('connectWalletBtn').addEventListener('click', () => {
+            WalletAuth.connectWallet();
+        });
+
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            WalletAuth.logout();
+        });
+    </script>
 </body>
 </html>
